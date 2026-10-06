@@ -1,82 +1,52 @@
-# 🍽️ Sertão Bão — cardápio digital e sistema de pedidos
+# Sertão Bão — cardápio digital e pedidos
 
-![Sertão Bão](og-image.jpg)
+Site de pedidos do quiosque da minha mãe, no DF. Está no ar desde setembro de 2026 e é usado todo dia: o cliente monta o pedido no celular e ele chega pronto no WhatsApp do quiosque. Do outro lado, um painel mostra os pedidos em tempo real e o caixa do dia.
 
-**🔗 Site no ar:** [sertaobao.netlify.app](https://sertaobao.netlify.app)
+**Site:** https://sertaobao.netlify.app
 
-Sistema web que está **em produção e é usado todo dia** por um quiosque de comida (café da manhã, marmitas caseiras e bebidas). O cliente monta o pedido pelo celular e envia pelo WhatsApp. O quiosque gerencia o cardápio e acompanha os pedidos num painel próprio.
+| Cardápio | Almoço com adicionais |
+|---|---|
+| ![Cardápio](docs/cardapio.png) | ![Almoço](docs/cardapio-almoco.png) |
 
-## ✨ Funcionalidades
+| Painel: pedidos e caixa do dia | Painel: horário e configurações |
+|---|---|
+| ![Pedidos](docs/painel-pedidos.png) | ![Loja](docs/painel-loja.png) |
 
-**Para o cliente**
-- Cardápio por categorias (café da manhã, almoço, porções, lanches e bebidas), com busca
-- Pratos com opções e adicionais (escolhas obrigatórias, limites e preços extras)
-- Sacola, checkout (retirada ou entrega, Pix, cartão ou dinheiro) e envio do pedido formatado para o WhatsApp
-- Horário de funcionamento automático: categorias e pratos aparecem só no dia e no horário certos
-- Atualização em tempo real: se um prato esgota, ele sai da tela e da sacola na hora
-- Acompanhamento do pedido e funcionamento offline com o último cardápio salvo
+## O que ele faz
 
-**Para o quiosque (painel `#admin`)**
-- Login com Supabase Auth
-- Gestão do cardápio, grupos de opções e fotos (Supabase Storage)
-- Pedidos em tempo real com alarme sonoro de pedido novo
-- Mini PDV com resumo do caixa do dia, ranking de pratos e impressão de comanda em impressora térmica (58/80 mm)
+Para o cliente: cardápio por categoria, pratos com opções e adicionais (ex.: escolher 2 carnes na marmita), sacola, checkout com entrega ou retirada e envio do pedido para o WhatsApp. Também dá para acompanhar o pedido depois.
 
-## 🛠️ Tecnologias
-- **Front-end:** HTML, JavaScript e Tailwind CSS (sem build)
-- **Banco e back-end:** Supabase (PostgreSQL, Auth, Row Level Security, Realtime e Storage)
-- **Deploy:** Netlify
+Para o quiosque: login, edição do cardápio e das fotos, lista de pedidos com alarme quando chega um novo, resumo de vendas, ranking dos pratos, bairros com mais entregas e impressão da comanda na impressora térmica.
 
-## 🗄️ Banco de dados
-Modelagem relacional em PostgreSQL: `pratos`, `grupos_opcoes`, `opcoes`, `prato_grupos` (relação N:N entre pratos e grupos de opções reutilizáveis), `configuracoes` e pedidos (com JSONB). A segurança fica no **Row Level Security**: o site público tem acesso limitado, e a gestão do cardápio e dos pedidos exige login.
+## Decisões técnicas
 
-## 🤖 Como foi feito: desenvolvimento orquestrando IA
-O código foi escrito com apoio de IA (Claude). O meu papel foi o de **orquestrador do projeto**:
-- **Requisitos:** levantei com o quiosque o que o sistema precisava fazer e transformei isso em tarefas.
-- **Direção técnica:** defini o banco no Supabase, a estrutura do projeto e a ordem das entregas, fase por fase.
-- **Revisão e testes:** li o que era gerado, testei no celular e no painel, apontei o que estava errado ou podia melhorar e validei o que estava certo.
-- **Dados e deploy:** carreguei o cardápio real via SQL e publiquei no Netlify.
-- **Manutenção:** acompanho o uso no dia a dia, corrijo problemas e faço ajustes conforme o quiosque pede.
+- **Sem framework e sem build.** HTML, JavaScript puro e Tailwind via CDN. O quiosque não tem ninguém de TI, então eu queria algo que eu mesmo conseguisse manter e publicar arrastando a pasta no Netlify.
+- **Supabase como back-end.** PostgreSQL, login, fotos e tempo real no mesmo lugar, no plano gratuito.
+- **Segurança no banco, não no front.** A chave que aparece no código é a publicável; quem decide o que cada um pode ler ou gravar são as regras de Row Level Security. O site público só tem acesso limitado e o painel exige login.
+- **Grupos de opções reutilizáveis.** "Carnes", "Acompanhamentos" etc. são cadastrados uma vez e ligados a vários pratos (tabela `prato_grupos`, relação N:N). Mudou o preço de uma carne, muda em todas as marmitas.
+- **Horário pelo fuso de São Paulo.** A loja abre e fecha sozinha e o café da manhã some às 10h, independente do fuso do celular do cliente.
+- **O carrinho se corrige sozinho.** Se um prato esgota ou muda de preço enquanto o cliente monta o pedido, a sacola é revalidada e ele recebe um aviso.
+- **Funciona sem internet.** O último cardápio fica salvo no navegador; sem conexão, o site mostra esse cardápio com um aviso (aparece no primeiro print).
 
----
+## Como eu fiz
 
-## 📁 Para quem vai mexer no código
+Escrevi o código com ajuda de IA (Claude). Minha parte foi levantar com o quiosque o que precisava, decidir como montar o banco e em que ordem construir, revisar e testar cada parte no celular e no painel, carregar o cardápio real via SQL, publicar e manter. Quando algo quebra ou o quiosque pede mudança, sou eu que resolvo.
 
-Site estático, sem build: basta abrir o `index.html` ou publicar a pasta inteira.
-Tailwind e Supabase vêm por CDN.
+## Estrutura do código
 
-### Estrutura
+Os arquivos são scripts normais (não módulos) e dividem as mesmas variáveis globais, então **a ordem dos `<script>` no `index.html` importa**.
 
 ```
-index.html                 HTML da página (estrutura, modais, carregamento dos scripts)
-og-image.jpg               imagem da pré-visualização do link
-css/estilos.css            CSS próprio (o resto é Tailwind nas classes do HTML)
+index.html          página, modais e ordem dos scripts
+css/estilos.css     CSS próprio (o resto é Tailwind nas classes)
 js/
-  tailwind.config.js       cores, fontes e sombras do tema
-  dados/cardapio-exemplo.js  cardápio/config de exemplo (usado sem Supabase)
-  util.js                  utilitários: dinheiro, horário de funcionamento, etc.
-  estado.js                estado global da página
-  supabase.js              chaves e ligação ao Supabase, carregar cardápio
-  loja/                    o que o cliente vê
-    cabecalho-abas.js  cartoes.js  vitrine.js  detalhe-prato.js
-    barra-sacola.js  eventos.js  persistencia.js  sacola.js  checkout.js
-    gravar-pedido.js       grava o pedido no Supabase ao finalizar
-  admin/                   painel de gestão (#admin)
-    painel.js              login, abas, operação, loja e Pix
-    catalogo.js  editor-prato.js  editor-grupo.js
-    pedidos.js  pedido-cartao.js  pedidos-componentes.js
-    alarme.js              som/alerta de pedido novo e notificações
-    ranking.js  zonas-quentes.js  caixa.js  comanda.js (impressão térmica)
-  cliente/                 área do cliente (sem login)
-    meus-pedidos.js  rastreio.js  jogo.js
-  main.js                  inicialização (sempre o último script)
+  util.js           dinheiro, horário de funcionamento, disponibilidade
+  estado.js         estado da página
+  supabase.js       conexão, carregamento do cardápio, cache e tempo real
+  loja/             o que o cliente vê (vitrine, sacola, checkout, gravar pedido)
+  admin/            painel (#admin): cardápio, pedidos, alarme, caixa, comanda
+  cliente/          meus pedidos e rastreio
+  main.js           inicialização (sempre o último)
 ```
 
-### Regras importantes
-
-- **A ordem dos `<script>` no `index.html` importa.** Os arquivos são scripts
-  normais (não módulos) e compartilham as mesmas variáveis globais. Um arquivo
-  pode *chamar dentro de funções* algo de um arquivo posterior, mas não pode
-  *usar na hora em que carrega* algo que ainda não foi carregado.
-- Arquivo novo: crie em `js/<pasta>/` e adicione o `<script>` antes do `main.js`.
-- Mexer na conexão com o Supabase: `js/supabase.js` (topo do arquivo).
+Para rodar: abrir o `index.html` ou publicar a pasta. Sem Supabase configurado, o site usa o cardápio de exemplo em `js/dados/`.
